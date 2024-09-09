@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mouse Controller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        #touchpad {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            background-color: #ccc;
+            border: 2px solid black;
+            touch-action: none;
+            user-select: none;
+            margin-bottom: 20px;
+        }
+
+        .click-buttons {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .click-button {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background-color: #ddd;
+            border: 2px solid black;
+            margin: 0 10px;
+            touch-action: none;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Mouse controller</h1>
+
+    <div id="touchpad"></div>
+
+    <div class="click-buttons">
+        <div class="click-button" id="left-click">Left Click</div>
+        <div class="click-button" id="right-click">Right Click</div>
+    </div>
+
+    <script>
+        let lastX, lastY;
+        // Si un doigt est sur le pavé tactile
+        let isHolding = false;
+        let touchStartTime = 0;
+
+        const touchpad = document.getElementById('touchpad');
+        const leftClickButton = document.getElementById('left-click');
+        const rightClickButton = document.getElementById('right-click');
+
+        // Capture les événements de touch
+        touchpad.addEventListener('touchstart', (e) => {
+            const touches = e.touches;
+
+            if (touches.length === 1) {
+                // Un seul doigt, un clic gauche ou un déplacement
+                isHolding = true;
+                lastX = touches[0].clientX;
+                lastY = touches[0].clientY;
+                touchStartTime = Date.now();
+            } else if (touches.length === 2 && isHolding) {
+                // Un deuxième doigt touche pendant qu'on maintient déjà l'écran : clic droit
+                fetch('/right-click', { method: 'POST' });
+                isHolding = false;
+            }
+        });
+
+        // Détection du mouvement pour déplacer la souris
+        touchpad.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+
+            if (!isHolding) return;
+
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - lastX;
+            const deltaY = touch.clientY - lastY;
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+
+
+            fetch('/move', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ deltaX, deltaY }),
+            });
+        });
+
+        // Lorsque tous les doigts sont levés
+        touchpad.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0 && isHolding) {
+                const touchDuration = Date.now() - touchStartTime;
+                if (touchDuration < 500) {
+                    fetch('/click', { method: 'POST' });
+                }
+                isHolding = false;
+            }
+        });
+
+
+        leftClickButton.addEventListener('touchstart', () => {
+            fetch('/click', { method: 'POST' });
+        });
+
+        rightClickButton.addEventListener('touchstart', () => {
+            fetch('/right-click', { method: 'POST' });
+        });
+    </script>
+</body>
+
+</html>
