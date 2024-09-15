@@ -4,6 +4,8 @@ const app = express();
 
 app.use(express.json());
 
+// Route
+
 app.post('/move', (req, res) => {
     const { deltaX, deltaY } = req.body;
 
