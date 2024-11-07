@@ -1,1 +1,1 @@
-# Mouse controller with `JavaScript` langage
+# Mouse controller with `JavaScript`
